@@ -1,0 +1,38 @@
+# Données incendies, météo et ERA5
+data/**/*.csv
+data/**/*.csv.gz
+data/**/*.xlsx
+data/**/*.nc
+
+# Données extraites et combinées
+outputs/**/*.csv
+outputs/**/*.nc
+
+# Images et figures générées
+outputs/**/*.png
+outputs/**/*.jpg
+
+# Fichiers compressés
+*.zip
+*.gz
+*.tar
+
+# Fichiers système et temporaires
+.DS_Store
+Thumbs.db
+
+# Fichiers Python intermédiaires
+__pycache__/
+*.py[cod]
+
+# Fichiers de logs ou d'erreurs
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Fichier de configuration CDS API
+.cdsapirc
+
+# Fichiers HTML
+*.html
