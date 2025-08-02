@@ -1,9 +1,9 @@
 # Analyse des Incendies de Forêt en Nouvelle-Aquitaine et PACA
 ## Objectif
 
-Ce projet vise à analyser l’influence des facteurs météorologiques sur les incendies de forêt dans les régions Nouvelle-Aquitaine et Provence-Alpes-Côte d’Azur (PACA).
-Il croise des données d’incendies issues de la base BDIFF avec des données climatiques horaires provenant de Météo France et de la réanalyse climatique ERA5 (Copernicus).
-L’objectif est d’identifier les conditions propices aux départs de feu afin de contribuer à une meilleure prévention et modélisation des risques incendie.
+Ce projet vise à analyser l’influence des conditions météorologiques sur les incendies de forêt dans deux régions particulièrement exposées : Nouvelle-Aquitaine et Provence-Alpes-Côte d’Azur (PACA).
+
+En croisant des données d’incendies (base BDIFF) avec des observations climatiques (Météo-France) et des données issues de la réanalyse ERA5 (Copernicus), l’objectif est d’identifier les conditions propices aux départs de feu, en vue d’améliorer la prévention et la modélisation du risque incendie.
 
 ## Structure du projet
 ``` bash
@@ -76,8 +76,9 @@ projet_incendies/
                 ├── 05_renome_mf.py
                 └── id.py
 ```
+## Sources de données et traitements
 
-### Incendies
+### Données d'incendies (BDIFF)
 
 - **Source principale** : [BDIFF – Base de Données des Incendies de Forêt](https://www.promethee.fr/)
 - **Contenu** : Données détaillées des feux de forêt en PACA et NA
@@ -86,48 +87,51 @@ projet_incendies/
   - Complétion des coordonnées géographiques via :
     - [Base officielle des codes postaux – Datanova](https://datanova.laposte.fr)
     - [API Adresse - data.gouv.fr](https://api-adresse.data.gouv.fr)
-  - Gestion manuelle des communes non trouvées (Communes_non_trouvees_*.xlsx)
-  - 
+    - Gestion manuelle des communes non trouvées en raison de changements gouvernementaux (fichiers Communes_non_trouvees_*.xlsx).
+  
 ### Météo France
 
 - **Source** : [meteo.data.gouv.fr](https://meteo.data.gouv.fr/datasets/6569b4473bedf2e7abad3b72)
 - **Contenu** : Observations horaires par station (2010–2025)
 - **Traitement** :
-  - Association de chaque incendie à la station la plus proche (04_station.py)
-  - Extraction uniquement des jours concernés par un incendie
-  - Renommage des colonnes techniques selon la documentation
-  - Ajout d’un identifiant id_incendie
+  - Association de chaque incendie à la station la plus proche grâce aux données géologiques et aux départements (script 04_station.py).
+  - Extraction des observations uniquement aux dates des incendies
+  - Renommage des colonnes techniques selon la documentation officielle
+  - Ajout d’un identifiant unique id_incendie pour la liaison des données
+  - 
 ### ERA5 (Copernicus)
 
 - **Source** : [Copernicus Climate Data Store](https://cds.climate.copernicus.eu/)
 - **Format** : .nc (NetCDF, compressé)
-- **Contenu** :
-  - Téléchargement des 15 mois les plus dévastateurs
-  - Données horaires riches et fiables
+- **Spécificités** :
+  - Données horaires très détaillées
+  - Ciblage sur les 15 mois les plus destructeurs
+  - Extraction limitée à 3 heures clés pour chaque incendie (t−1h, t, t+1h)
+  - Variables sélectionnées : 't2m', 'tp', 'swvl1', 'ssrd', 'pev', 'u10', 'v10', 'lai_hv'
 - **Traitement** :
   - Décompression des fichiers .nc
-  - Extraction des paramètres pertinents
-  - Concaténation en un fichier .csv par région
+  - Extraction et conversion vers .csv
+  - Concaténation par région
     
 ---
-## Étapes de traitement
+## Pipeline de traitement
 
 ### Prétraitement
 
-- Nettoyage des jeux de données (incendies et météo)
+- Nettoyage des données brutes (incendies et météo)
 - Conversion des fichiers .nc en .csv
 - Enrichissement géographique (coordonnées, codes INSEE)
-- Ajout de la colonne station pour relier les données météo
-- 
+- Association incendie ↔ station météo
+  
 ### Fusion & structuration
 
-- Liaison incendies ↔ météo via un identifiant unique
-- Harmonisation des noms et formats
-- Centralisation des données dans des fichiers finaux par région/source
+- Création d’un identifiant unique id_incendie pour relier les sources
+- Harmonisation des formats (dates, noms, unités)
+- Centralisation des jeux de données finaux par région/source
 
 ## Analyse descriptive 
 #### Notebooks principaux
-Après avoir effectué tous les traitements nécessaires dans les scripts, nous avons commencé l’exploration de la qualité des données et des paramètres influençant les incendies.  
+Après avoir effectué tous les traitements nécessaires dans scripts, nous avons commencé l’exploration de la qualité des données et des paramètres influençant les incendies.  
 Dans les fichiers `01_preprocess_*.ipynb`, nous avons préparé et nettoyé les données issues de Météo France, ERA5 et des bases d’incendies.  
 Ensuite, dans les fichiers `02_analyse_descriptive_*.ipynb`, nous avons réalisé l’analyse descriptive complète de l’ensemble des paramètres pertinents.  
 
@@ -141,7 +145,8 @@ Les résultats sont organisés dans le dossier `outputs/` :
 
 ---
 
-## Installation
+## Installation et configuration
+
 pour telecharger les données de era5 depuis [Copernicus Climate Data Store](https://cds.climate.copernicus.eu/)
 1. Créez un compte Copernicus.
 2. Récupérez votre clé API.
@@ -157,15 +162,13 @@ cd projet_incendies
 pip install -r requirements.txt
 ```
 
-# Intégration des Données Météorologiques
-
-## Contraintes et choix techniques
+## Contraintes techniques & choix méthodologiques
 
 L’intégration des données météorologiques a soulevé plusieurs défis techniques, en particulier en ce qui concerne la qualité, le volume et la structure des sources disponibles :
 
 ### Qualité variable des données Météo-France
 
-- Les fichiers d’observations horaires de Météo-France présentent un taux important de valeurs manquantes pour certaines stations ou variables.
+- Les fichiers d’observations horaires de Météo-France affichent un taux élevé de valeurs manquantes pour certaines stations et paramètres.
 - Un travail d’analyse de complétude a été réalisé pour sélectionner les variables exploitables (température, humidité relative, vent, etc.).
 - Les jeux de données ont été limités aux journées contenant des incendies, afin d’optimiser le traitement et réduire les biais liés aux valeurs manquantes.
 
@@ -187,14 +190,14 @@ Et uniquement les 8 variables les plus corrélées au risque d’incendie :
 - Vent zonal (u10) et méridien (v10)
 - Indice de feuillage (lai_hv)
 
-Malgré ce ciblage, le téléchargement reste chronophage : entre 5 et 6 jours continus pour traiter les deux régions (Nouvelle-Aquitaine et PACA), pour l’ensemble des incendies.
+Malgré ce ciblage, le téléchargement reste très long : il faut entre 5 et 6 jours continus pour traiter chaque région (Nouvelle-Aquitaine et PACA) pour l’ensemble des incendies.
 
-### Stratégie adoptée
+#### Stratégie adoptée
 
 Face à ces contraintes :
 - Une extraction exhaustive a été réalisée pour les 15 mois les plus dévastateurs (en surface brûlée), représentant un échantillon significatif des conditions extrêmes.
-- Les fichiers téléchargés (au format .nc, compressé) ont nécessité une phase de décompression et de conversion avant exploitation.
-- Les fichiers .csv.gz de Météo-France ont, à l’inverse, été plus simples à intégrer grâce à un script de conversion automatique.
+- Les fichiers téléchargés au format .nc peuvent prêter à confusion, car ils sont initialement compressés. Malheureusement, cette information n'est pas indiquée dans la documentation ni dans le format lui-même, ce qui peut entraîner des malentendus. Par conséquent, ces fichiers nécessitent une phase de décompression et puis de conversion avant d'être exploités (03_decompression_era5_na.py, 03_decompression_era5_paca.py)
+- Les fichiers .csv.gz de Météo-France ont, à l’inverse, été plus simples à intégrer grâce à un simple script de conversion automatique.
 
 ## Perspectives et travaux futurs
 
